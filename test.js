@@ -21,7 +21,7 @@ test('Specifically, good props check undefined (#1)', function(assert) {
 test('Bad props return a message', function(assert) {
   assert.plan(1);
   var message = checkPropTypes({x: PropTypes.number}, {x: ''}, 'prop', 'C');
-  assert.equal(message, 'Failed prop type: Invalid prop `x` of type `string` supplied to `C`, expected `number`.');
+  assert.deepEqual(message, ['Failed prop type: Invalid prop `x` of type `string` supplied to `C`, expected `number`.']);
 });
 
 test('Bad propTypes fail check', function(assert) {
@@ -29,10 +29,43 @@ test('Bad propTypes fail check', function(assert) {
   var message;
 
   message = checkPropTypes({x: null}, {}, 'prop', 'C');
-  assert.equal(message, 'C: prop type `x` is invalid; it must be a function, usually from React.PropTypes.');
+  assert.deepEqual(message, ['C: prop type `x` is invalid; it must be a function, usually from React.PropTypes.']);
 
   message = checkPropTypes({x: function() {return 1}}, {}, 'prop', 'C');
-  assert.equal(message, 'C: type specification of prop `x` is invalid; the type checker function must return `null` or an `Error` but returned a number. You may have forgotten to pass an argument to the type checker creator (arrayOf, instanceOf, objectOf, oneOf, oneOfType, and shape all require an argument).');
+  assert.deepEqual(message, ['C: type specification of prop `x` is invalid; the type checker function must return `null` or an `Error` but returned a number. You may have forgotten to pass an argument to the type checker creator (arrayOf, instanceOf, objectOf, oneOf, oneOfType, and shape all require an argument).']);
+});
+
+test('Multiple propType errors', function(assert) {
+  assert.plan(2);
+  var message;
+
+  messages = checkPropTypes(
+    {x: PropTypes.number.isRequired, y: PropTypes.number.isRequired},
+    {},
+    'prop',
+    'C'
+  );
+  assert.deepEqual(messages, [
+    'Failed prop type: The prop `x` is marked as required in `C`, but its value is `undefined`.',
+    'Failed prop type: The prop `y` is marked as required in `C`, but its value is `undefined`.'
+  ]);
+
+  // Nested proptype shapes
+  messages = checkPropTypes(
+    {x: PropTypes.number.isRequired,
+     o: PropTypes.shape({
+       y: PropTypes.number.isRequired,
+       z: PropTypes.number.isRequired
+     }).isRequired},
+    {o:{}},
+    'prop',
+    'C'
+  );
+  assert.deepEqual(messages, [
+    'Failed prop type: The prop `x` is marked as required in `C`, but its value is `undefined`.',
+    'Failed prop type: The prop `o.y` is marked as required in `C`, but its value is `undefined`.'
+    // Ugh! would like to get an error for o.z as well here... but prop-types won't tell us :(
+  ]);
 });
 
 test('Throwing propTypes fail check', function(assert) {
@@ -41,7 +74,7 @@ test('Throwing propTypes fail check', function(assert) {
     throw new Error('sup');
   }
   var message = checkPropTypes({x: throwingType}, {}, 'prop', 'C');
-  assert.equal(message, 'Failed prop type: sup');
+  assert.deepEqual(message, ['Failed prop type: sup']);
 });
 
 test('Does not avoid failing the same problem multiple times', function(assert) {

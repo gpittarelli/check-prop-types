@@ -24,11 +24,12 @@ function checkPropTypes(typeSpecs, values, location, componentName, getStack) {
   if (process.env.NODE_ENV !== 'production') {
     const ReactPropTypesSecret = require('prop-types/lib/ReactPropTypesSecret');
     var name = componentName || 'React class';
+    var errors = [];
     for (var typeSpecName in typeSpecs) {
       if (typeSpecs.hasOwnProperty(typeSpecName)) {
         var error;
         if (typeof typeSpecs[typeSpecName] !== 'function') {
-          return (name + ': ' + location + ' type `' + typeSpecName + '` is ' +
+          errors.push(name + ': ' + location + ' type `' + typeSpecName + '` is ' +
             'invalid; it must be a function, usually from React.PropTypes.');
         } else {
           // Prop type validation may throw. In case they do, catch and save the
@@ -41,7 +42,7 @@ function checkPropTypes(typeSpecs, values, location, componentName, getStack) {
           }
         }
         if (error && !(error instanceof Error)) {
-          return (name + ': type specification of ' + location + ' `' +
+          errors.push(name + ': type specification of ' + location + ' `' +
             typeSpecName + '` is invalid; the type checker function must ' +
             'return `null` or an `Error` but returned a ' + typeof error + '. '+
             'You may have forgotten to pass an argument to the type checker ' +
@@ -50,10 +51,11 @@ function checkPropTypes(typeSpecs, values, location, componentName, getStack) {
         }
         if (error instanceof Error) {
           var stack = getStack && getStack() || '';
-          return 'Failed ' + location + ' type: ' + error.message + stack;
+          errors.push('Failed ' + location + ' type: ' + error.message + stack);
         }
       }
     }
+    return errors.length === 0 ? undefined : errors;
   }
 }
 
